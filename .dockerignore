@@ -1,0 +1,8 @@
+php-app/vendor/
+php-app/composer.lock
+python-app/__pycache__/
+python-app/*.pyc
+python-app/venv/
+python-app/*.log
+.git/
+.dockerignore
