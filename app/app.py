@@ -13,7 +13,9 @@ WORK_API_TOKEN = os.getenv("WORK_API_TOKEN")
 SMARTY_API_TOKEN = os.getenv("SMARTY_API_TOKEN")
 
 if not SMARTY_API_TOKEN:
-    print("❌ Ошибка: SMARTY_API_TOKEN не загружен!")
+    print("Ошибка: SMARTY_API_TOKEN не загружен!")
+if not WORK_API_TOKEN:
+    print("Ошибка: WORK_API_TOKEN не загружен!")
 
 @app.route("/detect", methods=["POST"])
 def detect():
