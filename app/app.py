@@ -7,8 +7,13 @@ from detector import detect_car
 app = Flask(__name__)
 
 SMARTY_API_URL = "https://smarty.mail.ru/api/v1/objects/detect"
-TARGET_API_URL = "https://api.krosspark.ru/send_number"
-OAUTH_TOKEN = os.getenv("OAUTH_TOKEN")
+WORK_API = "https://work.1gt.ru/api/cardetect/open-gate"
+
+WORK_API_TOKEN = os.getenv("WORK_API_TOKEN")
+SMARTY_API_TOKEN = os.getenv("SMARTY_API_TOKEN")
+
+if not SMARTY_API_TOKEN:
+    print("❌ Ошибка: SMARTY_API_TOKEN не загружен!")
 
 @app.route("/detect", methods=["POST"])
 def detect():
@@ -29,53 +34,50 @@ def detect():
         data = {
             "meta": '{"mode": ["car_number"], "images": [{"name": "file"}]}'
         }
-        print(OAUTH_TOKEN)
-        headers = {"Authorization": f"Bearer {OAUTH_TOKEN}"}
-        url = f"{SMARTY_API_URL}?oauth_token={OAUTH_TOKEN}&oauth_provider=mcs"
+        headers = {"Authorization": f"Bearer {SMARTY_API_TOKEN}"}
+        url = f"{SMARTY_API_URL}?oauth_token={SMARTY_API_TOKEN}&oauth_provider=mcs"
         response = requests.post(url, headers=headers, files=files, data=data)
-
-    print("🔍 RAW SMARTY RESPONSE:", response.text)  # Логируем сырой ответ
 
     try:
         response_json = response.json()
     except json.JSONDecodeError:
-        print("❌ Ошибка: SMARTY вернул некорректный JSON!")
-        return jsonify({"error": "Invalid JSON response from SMARTY", "raw_response": response.text}), 500
+        print(response_json)
+        return jsonify({"error": "Invalid JSON response from SMARTY"}), 500
 
-    print("✅ Ответ SMARTY в формате JSON:", response_json)
-
-    # Проверяем, есть ли "body" в ответе
     body = response_json.get("body")
-    if body is None:
-        return jsonify({"error": "Некорректный ответ: отсутствует body"}), 500
-
-    # Если "body" пришел строкой, парсим его в JSON
     if isinstance(body, str):
         try:
             body = json.loads(body)
         except json.JSONDecodeError:
-            print("❌ Ошибка: 'body' не является корректным JSON:", body)
-            return jsonify({"error": "Некорректное тело ответа от SMARTY", "raw_body": body}), 500
+            print('NTRC',response_json)
+            return jsonify({"error": "Invalid body JSON from SMARTY"}), 500
 
-    # Проверяем наличие "car_number_labels"
     car_number_labels = body.get("car_number_labels", [])
-
-    print('Тест', car_number_labels)
-
     if not car_number_labels or car_number_labels[0].get("status") != 0:
-        return jsonify({"message": "Номер автомобиля не обнаружен"}), 200
+        return jsonify({"message": "Car number not detected"}), 200
 
-    # Исправленный доступ к номеру автомобиля
     car_number = car_number_labels[0]["labels"][0]["eng"]
 
-    # Отправляем номер автомобиля в целевой API
-    payload = {"car_number": car_number}
-    target_response = requests.post(TARGET_API_URL, json=payload)
+    headers = {
+        "Authorization": f"Bearer {WORK_API_TOKEN}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
 
-    if target_response.status_code == 200:
-        return jsonify({"message": "Number", "car_number": car_number}), 200
+    data = f"carNumber={car_number}"
+
+    print("➡️ Отправка в WORK API:")
+    print(f"URL: {WORK_API}")
+    print(f"Headers: {headers}")
+    print(f"Data: {data}")
+
+    target_response = requests.post(WORK_API, headers=headers, data=data)
+    print(f"⬅️ Ответ от WORK API: {target_response.status_code}")
+    print(target_response.text)
+
+    if target_response.status_code == 204:
+        return jsonify({"message": "Car number sent successfully", "car_number": car_number}), 200
     else:
-        return jsonify({"error": "Не удалось отправить номер автомобиля"}), 500
+        return jsonify({"error": target_response.text}), 404
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

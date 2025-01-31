@@ -3,3 +3,4 @@ requests
 ultralytics
 opencv-python-headless
 numpy
+python-dotenv

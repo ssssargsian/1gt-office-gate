@@ -4,6 +4,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - OAUTH_TOKEN=
+      - SMARTY_API_TOKEN=${SMARTY_API_TOKEN}
+      - WORK_API_TOKEN=${WORK_API_TOKEN}
     volumes:
       - ./app:/app
