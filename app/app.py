@@ -58,7 +58,7 @@ def detect():
     if not car_number_labels or car_number_labels[0].get("status") != 0:
         return jsonify({"message": "Car number not detected"}), 200
 
-    car_number = car_number_labels[0]["labels"][0]["eng"]
+    car_number = car_number_labels[0]["labels"][0]["rus"]
 
     headers = {
         "Authorization": f"Bearer {WORK_API_TOKEN}",
@@ -77,6 +77,7 @@ def detect():
     print(target_response.text)
 
     if target_response.status_code == 204:
+        car_number = car_number_labels[0]["labels"][0]["eng"]
         return jsonify({"message": "Car number sent successfully", "car_number": car_number}), 200
     else:
         return jsonify({"error": target_response.text}), 404

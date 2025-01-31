@@ -1,6 +1,7 @@
 services:
-  flask_app:
+  1gt_gate:
     build: .
+    container_name: 1gt_gate
     ports:
       - "5000:5000"
     environment:
